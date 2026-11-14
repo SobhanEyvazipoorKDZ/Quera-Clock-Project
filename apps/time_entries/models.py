@@ -6,15 +6,20 @@ from django.db import models
 from django.utils import timezone
 
 from core.models import TimestampedModel
-
+from core.models.base import SoftDeleteManager, SoftDeleteQuerySet
 from apps.projects.models import Project
 from apps.tags.models import Tag
 from apps.workspaces.models import Workspace
 
 
-class TimeEntryQuerySet(models.QuerySet):
+class TimeEntryQuerySet(SoftDeleteQuerySet):
     def running(self):
         return self.filter(end_time__isnull=True)
+
+    def visible_to(self, user):
+        if not user or not getattr(user, "is_authenticated", False):
+            return self.none()
+        return self.filter(user=user)
 
 
 class TimeEntry(TimestampedModel):
@@ -46,7 +51,7 @@ class TimeEntry(TimestampedModel):
     duration = models.DurationField(blank=True, null=True)
     is_billable = models.BooleanField(default=False)
 
-    objects = TimeEntryQuerySet.as_manager()
+    objects = SoftDeleteManager.from_queryset(TimeEntryQuerySet)()
 
     class Meta:
         verbose_name_plural = "time entries"

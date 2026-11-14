@@ -1,8 +1,21 @@
 from django.db import models
 
 from core.models import TimestampedModel
+from core.models.base import SoftDeleteManager, SoftDeleteQuerySet
 
 from apps.workspaces.models import Workspace
+
+
+class ClientQuerySet(SoftDeleteQuerySet):
+    def visible_to(self, user):
+        if not user or not getattr(user, "is_authenticated", False):
+            return self.none()
+
+        return self.filter(
+            workspace__memberships__user=user,
+            workspace__memberships__is_active=True,
+            workspace__memberships__is_deleted=False,
+        ).distinct()
 
 
 class Client(TimestampedModel):
@@ -14,7 +27,13 @@ class Client(TimestampedModel):
     name = models.CharField(max_length=255)
     email = models.EmailField(blank=True)
     notes = models.TextField(blank=True)
-    thumbnail = models.ImageField(upload_to="clients/", blank=True, null=True)
+    thumbnail = models.ImageField(
+        upload_to="clients/",
+        blank=True,
+        null=True,
+    )
+
+    objects = SoftDeleteManager.from_queryset(ClientQuerySet)()
 
     class Meta:
         ordering = ("name",)

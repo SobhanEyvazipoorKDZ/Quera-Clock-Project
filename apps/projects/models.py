@@ -2,9 +2,24 @@ from django.core.exceptions import ValidationError
 from django.db import models
 
 from core.models import TimestampedModel
+from core.models.base import SoftDeleteManager, SoftDeleteQuerySet
 
 from apps.clients.models import Client
 from apps.workspaces.models import Workspace
+
+
+class ProjectQuerySet(SoftDeleteQuerySet):
+    def visible_to(self, user):
+        if not user or not getattr(user, "is_authenticated", False):
+            return self.none()
+        return self.filter(
+            workspace__memberships__user=user,
+            workspace__memberships__is_active=True,
+            workspace__memberships__is_deleted=False,
+        ).distinct()
+
+    def not_archived(self):
+        return self.filter(is_archived=False)
 
 
 class Project(TimestampedModel):
@@ -25,6 +40,8 @@ class Project(TimestampedModel):
     description = models.TextField(blank=True)
     thumbnail = models.ImageField(upload_to="projects/", blank=True, null=True)
     is_archived = models.BooleanField(default=False)
+
+    objects = SoftDeleteManager.from_queryset(ProjectQuerySet)()
 
     class Meta:
         ordering = ("name",)

@@ -2,17 +2,31 @@ from django.conf import settings
 from django.db import models
 
 from core.models import TimestampedModel
+from core.models.base import SoftDeleteManager, SoftDeleteQuerySet
+
+
+class WorkspaceQuerySet(SoftDeleteQuerySet):
+    def visible_to(self, user):
+        if not user or not getattr(user, "is_authenticated", False):
+            return self.none()
+        return self.filter(
+            memberships__user=user,
+            memberships__is_active=True,
+            memberships__is_deleted=False,
+        ).distinct()
 
 
 class Workspace(TimestampedModel):
     name = models.CharField(max_length=255)
     description = models.TextField(blank=True)
-    thumbnail = models.ImageField(upload_to="workspaces/", blank=True)
+    thumbnail = models.ImageField(upload_to="workspaces/", blank=True, null=True)
     owner = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
         related_name="owned_workspaces",
     )
+
+    objects = SoftDeleteManager.from_queryset(WorkspaceQuerySet)()
 
     class Meta:
         ordering = ("name", "created_at")
@@ -26,6 +40,14 @@ class Workspace(TimestampedModel):
 
     def __str__(self):
         return self.name
+
+
+class WorkspaceMembershipQuerySet(SoftDeleteQuerySet):
+    def enabled(self):
+        return self.filter(is_active=True, is_deleted=False)
+
+    def for_user(self, user):
+        return self.enabled().filter(user=user)
 
 
 class WorkspaceMembership(TimestampedModel):
@@ -51,6 +73,8 @@ class WorkspaceMembership(TimestampedModel):
     )
     is_active = models.BooleanField(default=True)
     joined_at = models.DateTimeField(auto_now_add=True)
+
+    objects = SoftDeleteManager.from_queryset(WorkspaceMembershipQuerySet)()
 
     class Meta:
         ordering = ("workspace__name", "user__mobile")
