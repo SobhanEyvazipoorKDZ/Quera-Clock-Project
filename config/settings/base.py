@@ -21,6 +21,7 @@ INSTALLED_APPS = [
     "apps.projects",
     "apps.tags",
     "apps.time_entries",
+    "apps.contact_notes",
 ]
 
 MIDDLEWARE = [

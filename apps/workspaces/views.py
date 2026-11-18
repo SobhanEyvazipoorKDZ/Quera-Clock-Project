@@ -1,6 +1,9 @@
-from django.views.generic import TemplateView
+from django.contrib import messages
+from django.urls import reverse_lazy
+from django.views.generic import FormView, TemplateView
 
 from apps.clients.models import Client
+from apps.contact_notes.forms import ContactNoteForm
 from apps.projects.models import Project
 from apps.tags.models import Tag
 from apps.time_entries.models import TimeEntry
@@ -30,3 +33,16 @@ class StatusView(TemplateView):
         context["time_entry_count"] = TimeEntry.objects.count()
         context["running_timer_count"] = TimeEntry.objects.running().count()
         return context
+
+
+class AboutView(FormView):
+    template_name = "pages/about.html"
+    form_class = ContactNoteForm
+    success_url = reverse_lazy("workspaces:about")
+
+    def form_valid(self, form):
+        form.save()
+        messages.success(
+            self.request, "Thanks for your note — we'll get back to you soon."
+        )
+        return super().form_valid(form)
