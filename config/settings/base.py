@@ -7,6 +7,7 @@ DEBUG = False
 ALLOWED_HOSTS = []
 
 INSTALLED_APPS = [
+    "unfold",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -23,6 +24,12 @@ INSTALLED_APPS = [
     "apps.time_entries",
     "apps.contact_notes",
 ]
+
+UNFOLD = {
+    "SITE_TITLE": "Quera Clock Admin",
+    "SITE_HEADER": "Quera Clock",
+    "SITE_SUBHEADER": "Workspace-first time tracking",
+}
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",

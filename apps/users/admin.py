@@ -1,52 +1,25 @@
 from django.contrib import admin
-from django.contrib.auth.admin import UserAdmin
+from django.contrib.auth.admin import GroupAdmin as BaseGroupAdmin
+from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
+from django.contrib.auth.models import Group
+from unfold.admin import ModelAdmin
+from unfold.forms import AdminPasswordChangeForm, UserChangeForm, UserCreationForm
 
-from .models import User
+from apps.users.models import User
+
+admin.site.unregister(Group)
 
 
 @admin.register(User)
-class CustomUserAdmin(UserAdmin):
-    model = User
-
-    list_display = (
-        "mobile",
-        "email",
-        "first_name",
-        "last_name",
-        "is_active",
-        "is_staff",
-    )
-
-    search_fields = (
-        "mobile",
-        "email",
-        "first_name",
-        "last_name",
-    )
-
-    list_filter = (
-        "is_active",
-        "is_staff",
-        "is_superuser",
-    )
-
-    ordering = ("mobile",)
-
-    readonly_fields = (
-        "last_login",
-        "date_joined",
-    )
-
+class UserAdmin(BaseUserAdmin, ModelAdmin):
+    form = UserChangeForm
+    add_form = UserCreationForm
+    change_password_form = AdminPasswordChangeForm
+    list_display = ("mobile", "full_name", "email", "is_staff", "is_active")
+    ordering = ("first_name", "last_name", "mobile")
+    search_fields = ("mobile", "email", "first_name", "last_name")
     fieldsets = (
-        (
-            "Authentication",
-            {
-                "fields": (
-                    "mobile",
-                    "password",
-                )
-            },
-        ),
+        (None, {"fields": ("mobile", "password")}),
         (
             "Personal info",
             {
@@ -54,8 +27,8 @@ class CustomUserAdmin(UserAdmin):
                     "first_name",
                     "last_name",
                     "email",
-                    "description",
                     "birth_date",
+                    "description",
                     "profile_picture",
                 )
             },
@@ -69,32 +42,22 @@ class CustomUserAdmin(UserAdmin):
                     "is_superuser",
                     "groups",
                     "user_permissions",
-                )
+                ),
             },
         ),
-        (
-            "Important dates",
-            {
-                "fields": (
-                    "last_login",
-                    "date_joined",
-                )
-            },
-        ),
+        ("Important dates", {"fields": ("last_login", "date_joined")}),
     )
-
     add_fieldsets = (
         (
             None,
             {
                 "classes": ("wide",),
-                "fields": (
-                    "mobile",
-                    "password1",
-                    "password2",
-                    "is_staff",
-                    "is_superuser",
-                ),
+                "fields": ("mobile", "password1", "password2"),
             },
         ),
     )
+
+
+@admin.register(Group)
+class GroupAdmin(BaseGroupAdmin, ModelAdmin):
+    pass
