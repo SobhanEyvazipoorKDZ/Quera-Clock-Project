@@ -1,5 +1,4 @@
 from pathlib import Path
-from datetime import timedelta
 
 BASE_DIR = Path(__file__).resolve().parents[2]
 
@@ -15,11 +14,11 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
-    "corsheaders",
-    "rest_framework",
-    "rest_framework_simplejwt.token_blacklist",
     "crispy_forms",
     "crispy_bootstrap5",
+    "rest_framework",
+    "rest_framework_simplejwt.token_blacklist",
+    "corsheaders",
     "apps.users",
     "apps.workspaces",
     "apps.clients",
@@ -29,11 +28,6 @@ INSTALLED_APPS = [
     "apps.contact_notes",
 ]
 
-UNFOLD = {
-    "SITE_TITLE": "Quera Clock Admin",
-    "SITE_HEADER": "Quera Clock",
-    "SITE_SUBHEADER": "Workspace-first time tracking",
-}
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
@@ -45,24 +39,6 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
-
-REST_FRAMEWORK = {
-    "DEFAULT_AUTHENTICATION_CLASSES": (
-        "rest_framework_simplejwt.authentication.JWTAuthentication",
-    ),
-    "DEFAULT_PERMISSION_CLASSES": ("rest_framework.permissions.IsAuthenticated",),
-    "DEFAULT_PAGINATION_CLASS": "core.pagination.DefaultPagination",
-    "PAGE_SIZE": 10,
-}
-
-SIMPLE_JWT = {
-    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=30),
-    "REFRESH_TOKEN_LIFETIME": timedelta(days=7),
-    "ROTATE_REFRESH_TOKENS": True,
-    "BLACKLIST_AFTER_ROTATION": True,
-    "AUTH_HEADER_TYPES": ("Bearer",),
-}
-CORS_ALLOWED_ORIGINS = []
 
 ROOT_URLCONF = "config.urls"
 
@@ -92,6 +68,7 @@ DATABASES = {
 }
 
 AUTH_PASSWORD_VALIDATORS = []
+AUTH_USER_MODEL = "users.User"
 
 LANGUAGE_CODE = "en-us"
 TIME_ZONE = "Asia/Tehran"
@@ -99,19 +76,46 @@ USE_I18N = True
 USE_TZ = True
 
 
-STATIC_URL = "/static/"
-STATIC_ROOT = BASE_DIR / "staticfiles"
+STATIC_URL = "static/"
 STATICFILES_DIRS = [BASE_DIR / "static"]
 
 MEDIA_URL = "media/"
 MEDIA_ROOT = BASE_DIR / "media"
-DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
+LOGIN_URL = "users:login"
+LOGIN_REDIRECT_URL = "workspaces:dashboard"
+LOGOUT_REDIRECT_URL = "workspaces:landing"
+
+DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 CRISPY_ALLOWED_TEMPLATE_PACKS = "bootstrap5"
 CRISPY_TEMPLATE_PACK = "bootstrap5"
 
-AUTH_USER_MODEL = "users.User"
+UNFOLD = {
+    "SITE_TITLE": "Quera Clock Admin",
+    "SITE_HEADER": "Quera Clock",
+    "SITE_SUBHEADER": "Workspace-first time tracking",
+}
+REST_FRAMEWORK = {
+    "DEFAULT_AUTHENTICATION_CLASSES": (
+        "rest_framework_simplejwt.authentication.JWTAuthentication",
+    ),
+    "DEFAULT_PERMISSION_CLASSES": ("rest_framework.permissions.IsAuthenticated",),
+    "DEFAULT_PAGINATION_CLASS": "core.pagination.DefaultPagination",
+    "PAGE_SIZE": 10,
+    "DEFAULT_THROTTLE_CLASSES": [
+        "rest_framework.throttling.AnonRateThrottle",
+        "rest_framework.throttling.UserRateThrottle",
+    ],
+    "DEFAULT_THROTTLE_RATES": {
+        "anon": "60/minute",
+        "user": "240/minute",
+        "auth": "10/minute",
+    },
+}
 
-LOGIN_URL = "users:login"
-LOGIN_REDIRECT_URL = "users:profile"
-LOGOUT_REDIRECT_URL = "workspaces:landing"
+SIMPLE_JWT = {
+    "ROTATE_REFRESH_TOKENS": True,
+    "BLACKLIST_AFTER_ROTATION": True,
+}
+
+CORS_ALLOWED_ORIGINS = []
