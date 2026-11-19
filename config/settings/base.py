@@ -125,3 +125,9 @@ CELERY_BROKER_URL = "redis://localhost:6379/0"
 CELERY_RESULT_BACKEND = "redis://localhost:6379/1"
 CELERY_TASK_ALWAYS_EAGER = False
 CELERY_TASK_EAGER_PROPAGATES = True
+CELERY_BEAT_SCHEDULE = {
+    "cleanup-read-notifications": {
+        "task": "apps.notifications.tasks.cleanup_read_notifications",
+        "schedule": 3600.0,
+    },
+}
