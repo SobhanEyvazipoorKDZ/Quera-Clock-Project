@@ -1,5 +1,7 @@
-from django.utils.dateparse import parse_datetime
+from collections import defaultdict
+
 from django.utils import timezone
+from django.utils.dateparse import parse_datetime
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.exceptions import ValidationError
@@ -44,3 +46,41 @@ class TimeEntryViewSet(viewsets.ModelViewSet):
             raise ValidationError({"end_time": "End time must be greater than start time."})
         entry.stop(parsed_end)
         return Response(self.get_serializer(entry).data)
+
+    def list(self, request, *args, **kwargs):
+        return self.grouped(request)
+
+    @action(detail=False, methods=["get"])
+    def grouped(self, request):
+        groups = defaultdict(lambda: {"total_ms": 0, "entries": []})
+        for entry in self.get_queryset().order_by("-start_time", "-created_at"):
+            key = entry.start_time.date().isoformat()
+            data = self.get_serializer(entry).data
+            groups[key]["entries"].append(data)
+            groups[key]["total_ms"] += (entry.duration_seconds or 0) * 1000
+
+        return Response({
+            "items_per_page": 10,
+            "current_page_items_count": sum(len(value["entries"]) for value in groups.values()),
+            "total_items": sum(len(value["entries"]) for value in groups.values()),
+            "offset": 0,
+            "next_offset": None,
+            "has_more": False,
+            "server_now_ms": int(timezone.now().timestamp() * 1000),
+            "server_now": timezone.now().isoformat(),
+            "groups": [
+                {
+                    "key": key,
+                    "week_start": key,
+                    "week_end": key,
+                    "total_ms": value["total_ms"],
+                    "days": [{
+                        "key": key,
+                        "date": key,
+                        "total_ms": value["total_ms"],
+                        "entries": value["entries"],
+                    }],
+                }
+                for key, value in groups.items()
+            ],
+        })
