@@ -15,6 +15,7 @@ urlpatterns = [
     path("api/clients/", include("apps.clients.api.urls")),
     path("api/tags/", include("apps.tags.api.urls")),
     path("api/projects/", include("apps.projects.api.urls")),
+    path("api/time-entries/", include("apps.time_entries.api.urls")),
 ]
 
 if settings.DEBUG:
