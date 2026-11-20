@@ -12,6 +12,7 @@ urlpatterns = [
     path("api/workspaces/", include("apps.workspaces.api.urls")),
     path("api/memberships/", include("apps.workspaces.api.membership_urls")),
     path("api/workspace-memberships/", include("apps.workspaces.api.membership_urls")),
+    path("api/clients/", include("apps.clients.api.urls")),
 ]
 
 if settings.DEBUG:
