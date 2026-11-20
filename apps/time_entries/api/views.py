@@ -11,11 +11,18 @@ from rest_framework.response import Response
 
 from apps.time_entries.api.serializers import TimeEntrySerializer
 from apps.time_entries.models import TimeEntry
+from core.cache import (
+    bump_user_cache_version,
+    get_cached_response,
+    request_cache_key,
+    set_cached_response,
+)
 
 
 class TimeEntryViewSet(viewsets.ModelViewSet):
     serializer_class = TimeEntrySerializer
     permission_classes = [IsAuthenticated]
+    cache_namespace = "timesheet"
 
     def get_queryset(self):
         queryset = TimeEntry.objects.visible_to(self.request.user).select_related(
@@ -66,11 +73,25 @@ class TimeEntryViewSet(viewsets.ModelViewSet):
             queryset = queryset.order_by(ordering)
         return queryset.distinct()
 
+    def perform_create(self, serializer):
+        entry = serializer.save()
+        bump_user_cache_version(entry.user_id, self.cache_namespace)
+
+    def perform_update(self, serializer):
+        entry = serializer.save()
+        bump_user_cache_version(entry.user_id, self.cache_namespace)
+
+    def perform_destroy(self, instance):
+        user_id = instance.user_id
+        instance.delete()
+        bump_user_cache_version(user_id, self.cache_namespace)
+
     @action(detail=False, methods=["post"])
     def start(self, request):
         serializer = self.get_serializer(data={**request.data, "start_time": request.data.get("start_time") or timezone.now()})
         serializer.is_valid(raise_exception=True)
         entry = serializer.save()
+        bump_user_cache_version(entry.user_id, self.cache_namespace)
         return Response(self.get_serializer(entry).data, status=status.HTTP_201_CREATED)
 
     @action(detail=False, methods=["get"])
@@ -88,6 +109,7 @@ class TimeEntryViewSet(viewsets.ModelViewSet):
         if parsed_end <= entry.start_time:
             raise ValidationError({"end_time": "End time must be greater than start time."})
         entry.stop(parsed_end)
+        bump_user_cache_version(entry.user_id, self.cache_namespace)
         return Response(self.get_serializer(entry).data)
 
     def list(self, request, *args, **kwargs):
@@ -95,6 +117,11 @@ class TimeEntryViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=["get"])
     def grouped(self, request):
+        cache_key = request_cache_key(request.user.id, self.cache_namespace, request.query_params)
+        cached_payload = get_cached_response(cache_key)
+        if cached_payload is not None:
+            return Response(cached_payload)
+
         groups = defaultdict(lambda: {"total_ms": 0, "entries": []})
         for entry in self.get_queryset():
             key = entry.start_time.date().isoformat()
@@ -102,7 +129,7 @@ class TimeEntryViewSet(viewsets.ModelViewSet):
             groups[key]["entries"].append(data)
             groups[key]["total_ms"] += (entry.duration_seconds or 0) * 1000
 
-        return Response({
+        payload = {
             "items_per_page": 10,
             "current_page_items_count": sum(len(value["entries"]) for value in groups.values()),
             "total_items": sum(len(value["entries"]) for value in groups.values()),
@@ -126,4 +153,5 @@ class TimeEntryViewSet(viewsets.ModelViewSet):
                 }
                 for key, value in groups.items()
             ],
-        })
+        }
+        return Response(set_cached_response(cache_key, payload))
