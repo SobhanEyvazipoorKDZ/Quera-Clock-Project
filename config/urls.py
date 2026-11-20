@@ -14,6 +14,7 @@ urlpatterns = [
     path("api/workspace-memberships/", include("apps.workspaces.api.membership_urls")),
     path("api/clients/", include("apps.clients.api.urls")),
     path("api/tags/", include("apps.tags.api.urls")),
+    path("api/projects/", include("apps.projects.api.urls")),
 ]
 
 if settings.DEBUG:
