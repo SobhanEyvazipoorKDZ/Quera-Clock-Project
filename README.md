@@ -149,8 +149,8 @@ The repository includes pytest configuration in `pyproject.toml`, but pytest is 
 The default settings use SQLite and do not require environment variables for local development.
 
 ```bash
-git clone <repository-url>
-cd quera-clock-backend
+git clone https://github.com/SobhanEyvazipoorKDZ/Quera-Clock-Project
+cd Quera-Clock-Project
 
 python3 -m venv .venv
 source .venv/bin/activate       # macOS/Linux
